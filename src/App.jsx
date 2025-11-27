@@ -1,156 +1,108 @@
-import React, { useState, useEffect } from "react";
-import { database } from "./firebase.js";
-import { ref, set, get, update, onValue, child } from "firebase/database";
+import React, { useState } from "react";
+import { database } from "./firebase";
+import { ref, set, push, get } from "firebase/database";
 
-// Example prompts
-const regularPrompts = [
-  "What is the correct amount of money to spend on a first date?",
-  "What is the ideal bedtime for a 10-year-old?",
-  "What is the best ice cream flavor?"
-];
-
-const impostorPrompts = [
-  "Pick a dollar range between $20-$500",
-  "Pick a bedtime between 1 AM and 6 AM",
-  "Choose a random flavor of ice cream that doesn't exist"
-];
-
-export default function App() {
-  const [playerName, setPlayerName] = useState("");
+function App() {
+  const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
-  const [players, setPlayers] = useState({});
-  const [prompt, setPrompt] = useState("");
-  const [isImpostor, setIsImpostor] = useState(false);
-  const [joined, setJoined] = useState(false);
+  const [currentRoom, setCurrentRoom] = useState(null);
+  const [error, setError] = useState("");
 
-  // Listen for updates in the room
-  useEffect(() => {
-    if (!roomCode) return;
+  // Generate a random 6-digit room code
+  const generateRoomCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  const createRoom = async () => {
+    if (!name) {
+      setError("Please enter your name");
+      return;
+    }
+
+    const code = generateRoomCode();
+    const roomRef = ref(database, `rooms/${code}`);
+    
+    // Randomly pick impostor index
+    const players = [{ name, isImpostor: false }];
+    const impostorIndex = Math.random() < 0.5 ? 0 : -1; // 50% chance of impostor
+    if (impostorIndex === 0) players[0].isImpostor = true;
+
+    await set(roomRef, { players });
+    setRoomCode(code);
+    setCurrentRoom(players);
+    setError("");
+  };
+
+  const joinRoom = async () => {
+    if (!name || !roomCode) {
+      setError("Please enter your name and room code");
+      return;
+    }
 
     const roomRef = ref(database, `rooms/${roomCode}`);
-    const unsub = onValue(roomRef, (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
+    const snapshot = await get(roomRef);
 
-      setPlayers(data.players || {});
-      setPrompt(data.prompt || "");
+    if (!snapshot.exists()) {
+      setError("Room not found");
+      return;
+    }
 
-      if (playerName && data.players && data.players[playerName]) {
-        setIsImpostor(data.players[playerName].isImpostor);
+    const roomData = snapshot.val();
+    const players = roomData.players || [];
+
+    // Randomly assign impostor if none yet
+    if (!players.some(p => p.isImpostor)) {
+      const impostorIndex = Math.floor(Math.random() * (players.length + 1));
+      if (impostorIndex === players.length) {
+        // Current player becomes impostor
+        players.push({ name, isImpostor: true });
+      } else {
+        players.push({ name, isImpostor: false });
+        players[impostorIndex].isImpostor = true;
       }
-    });
+    } else {
+      players.push({ name, isImpostor: false });
+    }
 
-    return () => unsub();
-  }, [roomCode, playerName]);
-
-  // Create a new room
-  const handleCreateRoom = async () => {
-    if (!playerName) return alert("Enter your name first!");
-    const newRoomCode = Math.floor(1000 + Math.random() * 9000).toString();
-    const randomPrompt =
-      regularPrompts[Math.floor(Math.random() * regularPrompts.length)];
-    const randomImpostorPrompt =
-      impostorPrompts[Math.floor(Math.random() * impostorPrompts.length)];
-
-    await set(ref(database, `rooms/${newRoomCode}`), {
-      players: {
-        [playerName]: { isImpostor: false }
-      },
-      prompt: randomPrompt,
-      impostorPrompt: randomImpostorPrompt,
-      roundActive: true
-    });
-
-    // Assign a random impostor
-    assignImpostor(newRoomCode);
-
-    setRoomCode(newRoomCode);
-    setJoined(true);
+    await set(roomRef, { players });
+    setCurrentRoom(players);
+    setError("");
   };
-
-  // Join an existing room
-  const handleJoinRoom = async () => {
-    if (!playerName || !roomCode) return alert("Enter name and room code!");
-    const roomRef = ref(database, `rooms/${roomCode}`);
-    const snapshot = await get(child(roomRef, "players"));
-
-    if (!snapshot.exists()) return alert("Room does not exist!");
-
-    await update(ref(database, `rooms/${roomCode}/players`), {
-      [playerName]: { isImpostor: false }
-    });
-
-    setJoined(true);
-  };
-
-  // Randomly assign one impostor in the room
-  const assignImpostor = async (room) => {
-    const playersRef = ref(database, `rooms/${room}/players`);
-    const snapshot = await get(playersRef);
-    if (!snapshot.exists()) return;
-
-    const names = Object.keys(snapshot.val());
-    const impostorName = names[Math.floor(Math.random() * names.length)];
-
-    names.forEach((name) => {
-      update(ref(database, `rooms/${room}/players/${name}`), {
-        isImpostor: name === impostorName
-      });
-    });
-  };
-
-  // Determine which prompt to show
-  const displayedPrompt = isImpostor ? "You are the impostor!" : prompt;
 
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
+    <div style={{ padding: 20 }}>
       <h1>Guess The Liar</h1>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      <input
+        placeholder="Enter your name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <div style={{ marginTop: 10 }}>
+        <button onClick={createRoom}>Create Room</button>
+      </div>
+      <input
+        placeholder="Enter room code"
+        value={roomCode}
+        onChange={(e) => setRoomCode(e.target.value)}
+        style={{ marginTop: 10 }}
+      />
+      <div style={{ marginTop: 10 }}>
+        <button onClick={joinRoom}>Join Room</button>
+      </div>
 
-      {!joined && (
-        <>
-          <div>
-            <input
-              type="text"
-              placeholder="Enter your name"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-            />
-          </div>
-
-          <div style={{ marginTop: "20px" }}>
-            <button onClick={handleCreateRoom}>Create Room</button>
-          </div>
-
-          <div style={{ marginTop: "20px" }}>
-            <input
-              type="text"
-              placeholder="Enter room code to join"
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value)}
-            />
-            <button onClick={handleJoinRoom} style={{ marginLeft: "10px" }}>
-              Join Room
-            </button>
-          </div>
-        </>
-      )}
-
-      {joined && (
-        <>
-          <h2>Room: {roomCode}</h2>
-          <h3>Hello, {playerName}!</h3>
-          <p>{displayedPrompt}</p>
-
-          <h4>Players in room:</h4>
+      {currentRoom && (
+        <div style={{ marginTop: 20 }}>
+          <h2>Room Code: {roomCode}</h2>
           <ul>
-            {Object.keys(players).map((name) => (
-              <li key={name}>
-                {name} {players[name].isImpostor ? "(Impostor)" : ""}
+            {currentRoom.map((player, index) => (
+              <li key={index}>
+                {player.name} {player.isImpostor ? "(Impostor)" : ""}
               </li>
             ))}
           </ul>
-        </>
+        </div>
       )}
     </div>
   );
 }
+
+export default App;
