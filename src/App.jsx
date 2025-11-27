@@ -114,7 +114,7 @@ const snap = await get(roomRef);
 if (!snap.exists()) return;
 const data = snap.val();
 const playerNames = Object.keys(data.players);
-const numImpostors = Math.floor(Math.random() * playerNames.length);
+const numImpostors = Math.max(1, Math.floor(Math.random() * playerNames.length));
 const shuffled = [...playerNames].sort(() => 0.5 - Math.random());
 const selectedImpostors = shuffled.slice(0, numImpostors);
 const category = promptCategories[Math.floor(Math.random() * promptCategories.length)];
@@ -135,7 +135,8 @@ const voteRef = ref(database, `rooms/${roomCode}/players/${name}/vote`);
 await set(voteRef, votedPlayer);
 };
 
-return ( <div>
+return (
+<div style={{ fontFamily: "Arial, sans-serif" }}>
 {phase === "lobby" && (
 <div style={{ border: "1px solid #ccc", padding: "20px", borderRadius: "10px", maxWidth: "400px", margin: "20px auto", display: "flex", flexDirection: "column", gap: "10px" }}>
 <h2 style={{ textAlign: "center" }}>Lobby</h2>
@@ -147,21 +148,45 @@ return ( <div>
 <button onClick={startGame} style={{ padding: "10px", borderRadius: "5px", cursor: "pointer", backgroundColor: "#4caf50", color: "#fff", border: "none" }}>Start Game</button>
 )} </div>
 )}
-{phase === "answer" && (
-<div style={{ padding: "20px" }}> <h2>Answer Phase</h2> <p>Your question: {players[name]?.question}</p> <p>Time left: {Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000))} seconds</p> <p>Discuss your answer in real life. The impostor won't know they're impostor yet.</p> </div>
-)}
-{phase === "debate" && (
-<div style={{ padding: "20px" }}> <h2>Debate Phase</h2> <p>Discuss in real life and then vote in the app.</p>
-{Object.keys(players).map(p => (
-<button key={p} onClick={() => vote(p)} disabled={players[name]?.vote === p} style={{ margin: "5px", padding: "10px", borderRadius: "5px" }}>
-Vote {p} </button>
-))} <p>Your vote: {players[name]?.vote || "None"}</p> </div>
-)}
-{phase === "reveal" && (
-<div style={{ padding: "20px" }}> <h2>Reveal Phase</h2> <p>Impostor(s): {impostors.join(", ") || "None"}</p> <h4>Votes:</h4> <ul>
-{Object.entries(players).map(([p, data]) => ( <li key={p}>{p} voted for {data.vote || "nobody"}</li>
-))} </ul>
-{name === creator && <button onClick={startRound} style={{ padding: "10px", borderRadius: "5px", cursor: "pointer", marginTop: "10px" }}>Next Round</button>} </div>
-)} </div>
+
+```
+  {phase === "answer" && (
+    <div style={{ padding: "20px" }}>
+      <h2>Answer Phase</h2>
+      <p>Your question: {players[name]?.question}</p>
+      <p>Time left: {Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000))} seconds</p>
+      <p>Discuss your answer in real life. The impostor won't know they're impostor yet.</p>
+    </div>
+  )}
+
+  {phase === "debate" && (
+    <div style={{ padding: "20px" }}>
+      <h2>Debate Phase</h2>
+      <p>Discuss in real life and then vote in the app.</p>
+      {Object.keys(players).map(p => (
+        <button key={p} onClick={() => vote(p)} disabled={players[name]?.vote === p} style={{ margin: "5px", padding: "10px", borderRadius: "5px" }}>
+          Vote {p}
+        </button>
+      ))}
+      <p>Your vote: {players[name]?.vote || "None"}</p>
+    </div>
+  )}
+
+  {phase === "reveal" && (
+    <div style={{ padding: "20px" }}>
+      <h2>Reveal Phase</h2>
+      <p>Impostor(s): {impostors.join(", ") || "None"}</p>
+      <h4>Votes:</h4>
+      <ul>
+        {Object.entries(players).map(([p, data]) => (
+          <li key={p}>{p} voted for {data.vote || "nobody"}</li>
+        ))}
+      </ul>
+      {name === creator && <button onClick={startRound} style={{ padding: "10px", borderRadius: "5px", cursor: "pointer", marginTop: "10px" }}>Next Round</button>}
+    </div>
+  )}
+</div>
+```
+
 );
 }
