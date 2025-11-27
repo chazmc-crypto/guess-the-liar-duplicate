@@ -16,29 +16,29 @@ appId: "1:300436562056:web:8e5368b914a5cbfded7f3d"
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// Full prompt categories (100+ prompts)
+// Complete prompts array
 const promptCategories = [
-{ name: "Date Spending", regular: ["What is the ideal first date spending?", "Choose a budget for a first date meal"], impostor: ["Pick a dollar range between 20-200", "Choose an unusual date budget"] },
-{ name: "Movies", regular: ["What is your favorite movie?", "Best movie of all time?"], impostor: ["What is the worst movie of all time?", "Name a movie no one likes"] },
-{ name: "Sex Life", regular: ["How many times a week should a couple have sex?", "What's a normal number of partners?"], impostor: ["Pick a number 1-10", "Name an outrageous frequency"] },
-{ name: "Drinks", regular: ["What's your favorite alcoholic drink?", "Pick a drink you enjoy"], impostor: ["Name a disgusting drink", "Pick something you’d never touch"] },
-{ name: "Food", regular: ["Favorite food?", "What's your go-to meal?"], impostor: ["Pick the grossest food imaginable", "Choose a food no one would eat"] },
-{ name: "Vacation", regular: ["Favorite vacation spot?", "Where would you go for a luxury trip?"], impostor: ["Name a terrible vacation location", "Choose a dangerous destination"] },
-{ name: "Music", regular: ["Favorite song or artist?", "Song you listen to on repeat?"], impostor: ["Name the worst song ever", "Pick a song nobody likes"] },
-{ name: "Celebrity Crush", regular: ["Who is your celebrity crush?", "Name a famous person you like?"], impostor: ["Pick a celebrity nobody finds attractive", "Choose a weird celebrity crush"] },
-{ name: "Hobbies", regular: ["Favorite hobby?", "What do you do for fun?"], impostor: ["Name a boring hobby", "Pick a strange pastime"] },
-{ name: "Superpowers", regular: ["Which superpower would you choose?", "Favorite superhero ability?"], impostor: ["Pick the worst superpower ever", "Choose a useless ability"] },
-{ name: "Pets", regular: ["What's your favorite pet?", "Do you prefer dogs or cats?"], impostor: ["Pick a terrifying animal", "Name a pet no one wants"] },
-{ name: "Fashion", regular: ["Best clothing style?", "Pick a fashion trend you like"], impostor: ["Pick the ugliest clothing", "Choose a trend nobody wears"] },
-{ name: "Games", regular: ["Favorite board or video game?", "Most fun game you've played"], impostor: ["Pick a game everyone hates", "Name the worst game ever"] },
-{ name: "Childhood", regular: ["Favorite childhood memory?", "Best toy as a kid?"], impostor: ["Name a nightmare memory", "Pick a toy no one liked"] },
-{ name: "Drugs", regular: ["What drink or snack is most relaxing?", "Favorite legal indulgence?"], impostor: ["Pick the most disgusting drug", "Choose something extremely unsafe"] },
-{ name: "Work", regular: ["Dream job?", "Most satisfying work experience?"], impostor: ["Pick the worst job ever", "Choose a job no one wants"] },
-{ name: "Skills", regular: ["Most useful skill you have?", "Favorite talent?"], impostor: ["Pick a skill that's pointless", "Choose an awkward talent"] },
-{ name: "Love Life", regular: ["Best romantic gesture?", "Most memorable date?"], impostor: ["Pick the worst date ever", "Choose a terrible romantic move"] },
-{ name: "Movies 2", regular: ["Favorite comedy?", "Best animated film?"], impostor: ["Pick the most cringe-worthy movie", "Name a movie everyone regrets watching"] },
-{ name: "Travel", regular: ["Dream travel destination?", "Best country visited?"], impostor: ["Pick a horrible country to visit", "Choose a terrifying place"] },
-{ name: "Sports", regular: ["Favorite sport to watch?", "Sport you enjoy playing?"], impostor: ["Pick a sport no one likes", "Choose the most dangerous sport"] }
+{ name: "Date Spending", regular: ["What is the ideal first date spending?", "Choose a budget for a first date meal", "Favorite romantic gesture?", "Best way to split a bill on a date?"], impostor: ["Pick a dollar range between 20-200", "Choose an unusual date budget", "Suggest a date without spending any money", "Pick an outrageously expensive date"] },
+{ name: "Movies", regular: ["What is your favorite movie?", "Best movie of all time?", "Favorite film genre?", "Movie that always makes you cry?"], impostor: ["What is the worst movie of all time?", "Name a movie no one likes", "Pick a movie that doesn't exist", "Choose the most confusing film"] },
+{ name: "Sex Life", regular: ["How many times a week should a couple have sex?", "What's a normal number of partners?", "What's a healthy relationship habit?", "Most romantic time of day?"], impostor: ["Pick a number 1-10", "Name an outrageous frequency", "Suggest a bizarre sex habit", "Choose a strange romantic ritual"] },
+{ name: "Drinks", regular: ["What's your favorite alcoholic drink?", "Pick a drink you enjoy", "Favorite non-alcoholic beverage?", "Best drink to start the day?"], impostor: ["Name a disgusting drink", "Pick something you’d never touch", "Choose a drink that doesn't exist", "Suggest mixing incompatible flavors"] },
+{ name: "Food", regular: ["Favorite food?", "What's your go-to meal?", "Preferred breakfast item?", "Favorite dessert?"], impostor: ["Pick the grossest food imaginable", "Choose a food no one would eat", "Name a food from another planet", "Suggest eating raw ingredients only"] },
+{ name: "Vacation", regular: ["Favorite vacation spot?", "Where would you go for a luxury trip?", "Dream tropical location?", "Favorite city to visit?"], impostor: ["Name a terrible vacation location", "Choose a dangerous destination", "Suggest staying in the sewers", "Pick a place no one can reach"] },
+{ name: "Music", regular: ["Favorite song or artist?", "Song you listen to on repeat?", "Genre you love?", "Song that makes you happy?"], impostor: ["Name the worst song ever", "Pick a song nobody likes", "Choose a sound that isn't music", "Suggest an unplayable instrument"] },
+{ name: "Celebrity Crush", regular: ["Who is your celebrity crush?", "Name a famous person you like?", "Dream celebrity date?", "Favorite actor/actress?"], impostor: ["Pick a celebrity nobody finds attractive", "Choose a weird celebrity crush", "Name someone fictional", "Pick an imaginary celebrity"] },
+{ name: "Hobbies", regular: ["Favorite hobby?", "What do you do for fun?", "Sport you enjoy?", "Creative activity you love?"], impostor: ["Name a boring hobby", "Pick a strange pastime", "Suggest a dangerous hobby", "Choose a hobby no one knows"] },
+{ name: "Superpowers", regular: ["Which superpower would you choose?", "Favorite superhero ability?", "Most useful power?", "Dream power for a day?"], impostor: ["Pick the worst superpower ever", "Choose a useless ability", "Suggest a harmful power", "Pick a power from a villain"] },
+{ name: "Pets", regular: ["What's your favorite pet?", "Do you prefer dogs or cats?", "Favorite animal companion?", "Pet you'd love to own?"], impostor: ["Pick a terrifying animal", "Name a pet no one wants", "Choose a mythological pet", "Suggest a dangerous pet"] },
+{ name: "Fashion", regular: ["Best clothing style?", "Pick a fashion trend you like", "Favorite accessory?", "Comfortable outfit choice?"], impostor: ["Pick the ugliest clothing", "Choose a trend nobody wears", "Suggest wearing something illegal", "Pick a style from outer space"] },
+{ name: "Games", regular: ["Favorite board or video game?", "Most fun game you've played", "Game you always win?", "Childhood favorite game?"], impostor: ["Pick a game everyone hates", "Name the worst game ever", "Choose an unplayable game", "Suggest impossible rules"] },
+{ name: "Childhood", regular: ["Favorite childhood memory?", "Best toy as a kid?", "Favorite cartoon?", "Game you played outside?"], impostor: ["Name a nightmare memory", "Pick a toy no one liked", "Suggest a dangerous childhood activity", "Pick a fictional memory"] },
+{ name: "Drugs", regular: ["What drink or snack is most relaxing?", "Favorite legal indulgence?", "Comfort food or drink?", "Go-to snack?"], impostor: ["Pick the most disgusting drug", "Choose something extremely unsafe", "Illegal item", "Impossible substance"] },
+{ name: "Work", regular: ["Dream job?", "Most satisfying work experience?", "Workplace favorite?", "Job skill you love?"], impostor: ["Pick the worst job ever", "Choose a job no one wants", "Impossible task", "Dangerous occupation"] },
+{ name: "Skills", regular: ["Most useful skill?", "Favorite talent?", "Skill you'd teach?", "Skill you're proud of?"], impostor: ["Pick a skill that's pointless", "Choose an awkward talent", "Useless ability", "Unteachable skill"] },
+{ name: "Love Life", regular: ["Best romantic gesture?", "Most memorable date?", "Favorite love story?", "Relationship goal?"], impostor: ["Pick the worst date ever", "Choose a terrible romantic move", "Impossible love story", "Unrealistic romance"] },
+{ name: "Movies 2", regular: ["Favorite comedy?", "Best animated film?", "Movie that makes you laugh?", "Classic movie favorite?"], impostor: ["Pick the most cringe-worthy movie", "Name a movie everyone regrets watching", "Unwatchable film", "Movie that doesn't exist"] },
+{ name: "Travel", regular: ["Dream travel destination?", "Best country visited?", "Favorite city?", "Place you want to explore?"], impostor: ["Pick a horrible country to visit", "Choose a terrifying place", "Impossible location", "Dangerous environment"] },
+{ name: "Sports", regular: ["Favorite sport to watch?", "Sport you enjoy playing?", "Favorite athlete?", "Team you support?"], impostor: ["Pick a sport no one likes", "Choose the most dangerous sport", "Impossible game", "Boring competition"] }
 ];
 
 export default function App() {
@@ -49,6 +49,7 @@ const [impostors, setImpostors] = useState([]);
 const [phase, setPhase] = useState("lobby");
 const [timerEnd, setTimerEnd] = useState(null);
 const [creator, setCreator] = useState("");
+const [timeLeft, setTimeLeft] = useState(0);
 
 useEffect(() => {
 if (!roomCode) return;
@@ -68,12 +69,14 @@ return () => unsub();
 useEffect(() => {
 if (!timerEnd || phase === "lobby" || phase === "reveal") return;
 const interval = setInterval(async () => {
-if (Date.now() >= timerEnd) {
+const remaining = Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000));
+setTimeLeft(remaining);
+if (remaining <= 0) {
 const roomRef = ref(database, `rooms/${roomCode}`);
 const snap = await get(roomRef);
 if (!snap.exists()) return;
 if (phase === "answer") {
-await update(roomRef, { phase: "debate", timerEnd: Date.now() + 3 * 60 * 1000 });
+await update(roomRef, { phase: "debate", timerEnd: Date.now() + 180000 });
 } else if (phase === "debate") {
 await update(roomRef, { phase: "reveal", timerEnd: null });
 }
@@ -126,7 +129,7 @@ updatedPlayers[p] = { vote: "", question: category.impostor[Math.floor(Math.rand
 updatedPlayers[p] = { vote: "", question: category.regular[Math.floor(Math.random() * category.regular.length)] };
 }
 });
-const end = Date.now() + 60 * 1000;
+const end = Date.now() + 60000; // 1 min for answer
 await update(roomRef, { players: updatedPlayers, impostors: selectedImpostors, phase: "answer", timerEnd: end });
 };
 
@@ -136,53 +139,54 @@ await set(voteRef, votedPlayer);
 };
 
 return (
-<div style={{ fontFamily: "Arial, sans-serif" }}>
+<div style={{ fontFamily: "Arial, sans-serif", textAlign: "center", padding: "20px" }}>
 {phase === "lobby" && (
-<div style={{ border: "1px solid #ccc", padding: "20px", borderRadius: "10px", maxWidth: "400px", margin: "20px auto", display: "flex", flexDirection: "column", gap: "10px" }}>
-<h2 style={{ textAlign: "center" }}>Lobby</h2>
-<input placeholder="Your name" value={name} onChange={e => setName(e.target.value)} style={{ padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }} />
-<input placeholder="Room code" value={roomCode} onChange={e => setRoomCode(e.target.value)} style={{ padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }} />
-<button onClick={createRoom} style={{ padding: "10px", borderRadius: "5px", cursor: "pointer" }}>Create Room</button>
-<button onClick={joinRoom} style={{ padding: "10px", borderRadius: "5px", cursor: "pointer" }}>Join Room</button>
+<div style={{ border: "1px solid #ccc", padding: "20px", borderRadius: "10px", maxWidth: "400px", margin: "20px auto" }}> <h2>Lobby</h2>
+<input placeholder="Your name" value={name} onChange={e => setName(e.target.value)} style={{ padding: "8px", margin: "5px" }} />
+<input placeholder="Room code" value={roomCode} onChange={e => setRoomCode(e.target.value)} style={{ padding: "8px", margin: "5px" }} />
+<div style={{ marginTop: "10px" }}>
+<button onClick={createRoom} style={{ padding: "10px", margin: "5px" }}>Create Room</button>
+<button onClick={joinRoom} style={{ padding: "10px", margin: "5px" }}>Join Room</button>
 {name && creator && name === creator && (
-<button onClick={startGame} style={{ padding: "10px", borderRadius: "5px", cursor: "pointer", backgroundColor: "#4caf50", color: "#fff", border: "none" }}>Start Game</button>
-)} </div>
+<button onClick={startGame} style={{ padding: "10px", margin: "5px", backgroundColor: "#4caf50", color: "#fff", border: "none" }}>Start Game</button>
+)} </div> </div>
 )}
 
 ```
   {phase === "answer" && (
-    <div style={{ padding: "20px" }}>
+    <div>
       <h2>Answer Phase</h2>
-      <p>Your question: {players[name]?.question}</p>
-      <p>Time left: {Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000))} seconds</p>
-      <p>Discuss your answer in real life. The impostor won't know they're impostor yet.</p>
+      <p><strong>Question:</strong> {players[name]?.question}</p>
+      <p><strong>Time left:</strong> {timeLeft}s</p>
+      <p>Discuss your answer in real life. Impostors don't know they are impostors yet.</p>
     </div>
   )}
 
   {phase === "debate" && (
-    <div style={{ padding: "20px" }}>
+    <div>
       <h2>Debate Phase</h2>
-      <p>Discuss in real life and then vote in the app.</p>
+      <p>Discuss and vote in the app.</p>
       {Object.keys(players).map(p => (
-        <button key={p} onClick={() => vote(p)} disabled={players[name]?.vote === p} style={{ margin: "5px", padding: "10px", borderRadius: "5px" }}>
+        <button key={p} onClick={() => vote(p)} disabled={players[name]?.vote === p} style={{ margin: "5px", padding: "10px" }}>
           Vote {p}
         </button>
       ))}
-      <p>Your vote: {players[name]?.vote || "None"}</p>
+      <p><strong>Your vote:</strong> {players[name]?.vote || "None"}</p>
+      <p><strong>Time left:</strong> {timeLeft}s</p>
     </div>
   )}
 
   {phase === "reveal" && (
-    <div style={{ padding: "20px" }}>
+    <div>
       <h2>Reveal Phase</h2>
-      <p>Impostor(s): {impostors.join(", ") || "None"}</p>
+      <p><strong>Impostor(s):</strong> {impostors.join(", ") || "None"}</p>
       <h4>Votes:</h4>
       <ul>
         {Object.entries(players).map(([p, data]) => (
           <li key={p}>{p} voted for {data.vote || "nobody"}</li>
         ))}
       </ul>
-      {name === creator && <button onClick={startRound} style={{ padding: "10px", borderRadius: "5px", cursor: "pointer", marginTop: "10px" }}>Next Round</button>}
+      {name === creator && <button onClick={startRound} style={{ padding: "10px", marginTop: "10px" }}>Next Round</button>}
     </div>
   )}
 </div>
