@@ -218,7 +218,7 @@ return (
       <input
         type="text"
         value={players[name]?.answer || ""}
-        onChange={e => update(ref(database, `rooms/${roomCode}/players/${name}/answer`), e.target.value)}
+        onChange={e => update(ref(database, `rooms/${roomCode}/players/${name}`), { answer: e.target.value })}
         placeholder="Type your answer"
       />
       <div>Time left: {timeLeft}s</div>
