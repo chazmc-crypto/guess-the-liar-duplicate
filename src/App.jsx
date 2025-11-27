@@ -45,14 +45,12 @@ const [round, setRound] = useState(1);
 const [selectedVotes, setSelectedVotes] = useState([]);
 const [confetti, setConfetti] = useState(null);
 
-// Lazy load canvas-confetti
 useEffect(() => {
 if (typeof window !== "undefined") {
 import("canvas-confetti").then((mod) => setConfetti(() => mod.default));
 }
 }, []);
 
-// Subscribe to room changes
 useEffect(() => {
 if (!roomCode) return;
 const roomRef = ref(database, `rooms/${roomCode}`);
@@ -70,7 +68,6 @@ setRound(data.round || 1);
 return () => unsub();
 }, [roomCode]);
 
-// Timer & automatic phase progression
 useEffect(() => {
 if (!timerEnd || phase === "lobby" || phase === "reveal") return;
 const tick = setInterval(async () => {
@@ -90,7 +87,6 @@ await update(roomRef, { phase: "reveal", timerEnd: null });
 return () => clearInterval(tick);
 }, [timerEnd, phase, roomCode]);
 
-// Lobby management
 const createRoom = async () => {
 if (!name) { alert("Enter your name"); return; }
 const code = Math.floor(Math.random() * 9000 + 1000).toString();
@@ -115,7 +111,6 @@ if (!snap.exists()) { alert("Room not found"); return; }
 await set(ref(database, `rooms/${roomCode}/players/${name}`), { answer: "", vote: [] });
 };
 
-// Start round
 const startRound = async () => {
 if (!roomCode) return;
 const roomRef = ref(database, `rooms/${roomCode}`);
@@ -146,18 +141,17 @@ round: data.round || 1
 });
 };
 
-// Voting
 const toggleVote = (playerName) => {
 setSelectedVotes(prev =>
 prev.includes(playerName) ? prev.filter(p => p !== playerName) : [...prev, playerName]
 );
 };
+
 const submitVote = async () => {
 if (!roomCode || !name) return;
 await set(ref(database, `rooms/${roomCode}/players/${name}/vote`), selectedVotes);
 };
 
-// Next round
 const nextRound = async () => {
 if (name !== creator) { alert("Only creator can next round"); return; }
 if (round >= 10) { alert("Game over!"); return; }
@@ -166,7 +160,6 @@ setSelectedVotes([]);
 startRound();
 };
 
-// Confetti trigger
 useEffect(() => {
 if (phase === "reveal" && confetti) {
 Object.entries(players).forEach(([p, data]) => {
