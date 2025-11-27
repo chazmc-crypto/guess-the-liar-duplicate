@@ -164,7 +164,18 @@ function App() {
 
       {!roomCode && (
         <div>
-          <input placeholder="Enter your name" value={name} onChange={e => setName(e.target.value)} />
+          <input
+            placeholder="Enter your name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            style={{ marginRight: 10 }}
+          />
+          <input
+            placeholder="Enter room code to join"
+            value={roomCode}
+            onChange={e => setRoomCode(e.target.value)}
+            style={{ marginRight: 10 }}
+          />
           <div style={{ marginTop: 10 }}>
             <button onClick={createRoom}>Create Room</button>
             <button onClick={joinRoom}>Join Room</button>
