@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, onValue, update, get } from "firebase/database";
 
-// Firebase configuration
+// Firebase configuration (yours)
 const firebaseConfig = {
   apiKey: "AIzaSyBfHKSTDRQVsoFXSbospWZHJRlRSijgiW0",
   authDomain: "guesstheliar-ca0b6.firebaseapp.com",
@@ -16,251 +16,168 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// FULL PROMPTS ARRAY — FIXED & CLEAN
+/*
+  Reworked promptCategories: for each category we have:
+    - real: canonical question shown to non-impostors and revealed after answer phase
+    - impostors: array of 3 related impostor variants (twists/opposites)
+  (I used your categories and gave each 3 impostor variants)
+*/
 const promptCategories = [
   {
     name: "Date Spending",
-    regular: [
-      "What is the ideal first date spending?",
-      "Choose a budget for a first date meal",
-      "Favorite romantic gesture?",
-      "Best way to split a bill on a date?"
-    ],
-    impostor: [
-      "Pick a dollar range between 20-200",
-      "Choose an unusual date budget",
-      "Suggest a date without spending any money",
-      "Pick an outrageously expensive date"
+    real: "What is your ideal first-date plan?",
+    impostors: [
+      "Describe the worst first-date budget you can imagine.",
+      "Pick a dollar range between $20–$200 you think is outrageous.",
+      "What's the most expensive first-date you would pretend to like?"
     ]
   },
   {
     name: "Movies",
-    regular: [
-      "What is your favorite movie?",
-      "Best movie of all time?",
-      "Favorite film genre?",
-      "Movie that always makes you cry?"
-    ],
-    impostor: [
-      "What is the worst movie of all time?",
-      "Name a movie no one likes",
-      "Pick a movie that doesn't exist",
-      "Choose the most confusing film"
+    real: "What's your favorite movie?",
+    impostors: [
+      "Name the worst movie of all time.",
+      "Pick a movie that nobody should watch.",
+      "What's a movie that deserves zero stars?"
     ]
   },
   {
     name: "Sex Life",
-    regular: [
-      "How many times a week should a couple have sex?",
-      "What's a normal number of partners?",
-      "What's a healthy relationship habit?",
-      "Most romantic time of day?"
-    ],
-    impostor: [
-      "Pick a number 1-10",
-      "Name an outrageous frequency",
-      "Suggest a bizarre sex habit",
-      "Choose a strange romantic ritual"
+    real: "How many times per week is healthy for a couple?",
+    impostors: [
+      "Pick a number 1–10 for how often a couple should hook up (wild guess).",
+      "Name an outrageous frequency for sex you think is funny.",
+      "Describe a sex schedule that would be impossible to keep."
     ]
   },
   {
     name: "Drinks",
-    regular: [
-      "What's your favorite alcoholic drink?",
-      "Pick a drink you enjoy",
-      "Favorite non-alcoholic beverage?",
-      "Best drink to start the day?"
-    ],
-    impostor: [
-      "Name a disgusting drink",
-      "Pick something you’d never touch",
-      "Choose a drink that doesn't exist",
-      "Suggest mixing incompatible flavors"
+    real: "What's your favorite drink (alcoholic or non-alcoholic)?",
+    impostors: [
+      "Name a disgusting drink you would never try.",
+      "Pick a crazy drink combination you'd pretend is normal.",
+      "Describe a drink that should not exist."
     ]
   },
   {
     name: "Food",
-    regular: [
-      "Favorite food?",
-      "What's your go-to meal?",
-      "Preferred breakfast item?",
-      "Favorite dessert?"
-    ],
-    impostor: [
-      "Pick the grossest food imaginable",
-      "Choose a food no one would eat",
-      "Name a food from another planet",
-      "Suggest eating raw ingredients only"
+    real: "What's your go-to comfort food?",
+    impostors: [
+      "Pick the grossest food you can imagine.",
+      "Name a food you'd refuse to eat ever.",
+      "Describe the worst tasting dish possible."
     ]
   },
   {
     name: "Vacation",
-    regular: [
-      "Favorite vacation spot?",
-      "Where would you go for a luxury trip?",
-      "Dream tropical location?",
-      "Favorite city to visit?"
-    ],
-    impostor: [
-      "Name a terrible vacation location",
-      "Choose a dangerous destination",
-      "Suggest staying in the sewers",
-      "Pick a place no one can reach"
+    real: "What's the best vacation spot you've been to or want to visit?",
+    impostors: [
+      "Name a terrible vacation location you'd avoid.",
+      "Pick a dangerous place you'd never go.",
+      "Describe an impossible vacation (e.g., sinkhole island)."
     ]
   },
   {
     name: "Music",
-    regular: [
-      "Favorite song or artist?",
-      "Song you listen to on repeat?",
-      "Genre you love?",
-      "Song that makes you happy?"
-    ],
-    impostor: [
-      "Name the worst song ever",
-      "Pick a song nobody likes",
-      "Choose a sound that isn't music",
-      "Suggest an unplayable instrument"
+    real: "Which song or artist do you listen to most?",
+    impostors: [
+      "Name the worst song ever made.",
+      "Pick a genre that ruins music for everyone.",
+      "Choose a track that makes people cringe."
     ]
   },
   {
     name: "Celebrity Crush",
-    regular: [
-      "Who is your celebrity crush?",
-      "Name a famous person you like?",
-      "Dream celebrity date?",
-      "Favorite actor/actress?"
-    ],
-    impostor: [
-      "Pick a celebrity nobody finds attractive",
-      "Choose a weird celebrity crush",
-      "Name someone fictional",
-      "Pick an imaginary celebrity"
+    real: "Who is your celebrity crush?",
+    impostors: [
+      "Pick a celebrity nobody finds attractive.",
+      "Name a fictional person as your crush.",
+      "Choose a celebrity you think is overrated."
     ]
   },
   {
     name: "Hobbies",
-    regular: [
-      "Favorite hobby?",
-      "What do you do for fun?",
-      "Sport you enjoy?",
-      "Creative activity you love?"
-    ],
-    impostor: [
-      "Name a boring hobby",
-      "Pick a strange pastime",
-      "Suggest a dangerous hobby",
-      "Choose a hobby no one knows"
+    real: "What's your favorite hobby?",
+    impostors: [
+      "Name the most boring hobby imaginable.",
+      "Pick a pastime that seems dangerous.",
+      "Describe a hobby nobody would try."
     ]
   },
   {
     name: "Superpowers",
-    regular: [
-      "Which superpower would you choose?",
-      "Favorite superhero ability?",
-      "Most useful power?",
-      "Dream power for a day?"
-    ],
-    impostor: [
-      "Pick the worst superpower ever",
-      "Choose a useless ability",
-      "Suggest a harmful power",
-      "Pick a power from a villain"
+    real: "Which superpower would you want?",
+    impostors: [
+      "Pick the most useless superpower you can think of.",
+      "Name a superpower that would be a curse, not a gift.",
+      "Choose a villain's power you'd never take."
     ]
   },
   {
     name: "Pets",
-    regular: [
-      "What's your favorite pet?",
-      "Do you prefer dogs or cats?",
-      "Favorite animal companion?",
-      "Pet you'd love to own?"
-    ],
-    impostor: [
-      "Pick a terrifying animal",
-      "Name a pet no one wants",
-      "Choose a mythological pet",
-      "Suggest a dangerous pet"
+    real: "What's your favorite pet (dog/cat/other)?",
+    impostors: [
+      "Pick a terrifying pet to keep at home.",
+      "Name a creature no one should adopt.",
+      "Describe a fictional pet from a nightmare."
     ]
   },
   {
     name: "Fashion",
-    regular: [
-      "Best clothing style?",
-      "Pick a fashion trend you like",
-      "Favorite accessory?",
-      "Comfortable outfit choice?"
-    ],
-    impostor: [
-      "Pick the ugliest clothing",
-      "Choose a trend nobody wears",
-      "Suggest wearing something illegal",
-      "Pick a style from outer space"
+    real: "What's a fashion trend you like?",
+    impostors: [
+      "Pick the ugliest clothing item you can imagine.",
+      "Name a trend that should never come back.",
+      "Describe an outfit that breaks every rule."
     ]
   },
   {
     name: "Games",
-    regular: [
-      "Favorite board or video game?",
-      "Most fun game you've played",
-      "Game you always win?",
-      "Childhood favorite game?"
-    ],
-    impostor: [
-      "Pick a game everyone hates",
-      "Name the worst game ever",
-      "Choose an unplayable game",
-      "Suggest impossible rules"
+    real: "What's your favorite game (board or video)?",
+    impostors: [
+      "Name the worst game you've played.",
+      "Pick a game nobody should play.",
+      "Describe a game with impossible rules."
     ]
   },
   {
     name: "Childhood",
-    regular: [
-      "Favorite childhood memory?",
-      "Best toy as a kid?",
-      "Favorite cartoon?",
-      "Game you played outside?"
-    ],
-    impostor: [
-      "Name a nightmare memory",
-      "Pick a toy no one liked",
-      "Suggest a dangerous childhood activity",
-      "Pick a fictional memory"
+    real: "What's your favorite childhood memory?",
+    impostors: [
+      "Name a nightmare you had as a kid.",
+      "Pick a toy nobody liked.",
+      "Describe a creepy memory that didn't happen."
     ]
   },
   {
     name: "Drugs",
-    regular: [
-      "What drink or snack is most relaxing?",
-      "Favorite legal indulgence?",
-      "Comfort food or drink?",
-      "Go-to snack?"
-    ],
-    impostor: [
-      "Pick the most disgusting drug",
-      "Choose something extremely unsafe",
-      "Illegal item",
-      "Impossible substance"
+    real: "What's a legal treat or indulgence you enjoy?",
+    impostors: [
+      "Name the most disgusting illegal thing you can imagine.",
+      "Pick a dangerous substance you'd never touch.",
+      "Describe a pretend drug from fiction."
     ]
   }
+  // Add more categories later as you like...
 ];
 
+/* ---------- App component ---------- */
 export default function App() {
   const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
-  const [players, setPlayers] = useState({});
-  const [impostors, setImpostors] = useState([]);
-  const [phase, setPhase] = useState("lobby");
+  const [players, setPlayers] = useState({}); // { name: { question, vote } }
+  const [impostors, setImpostors] = useState([]); // array of names
+  const [phase, setPhase] = useState("lobby"); // lobby | answer | debate | reveal
   const [timerEnd, setTimerEnd] = useState(null);
   const [creator, setCreator] = useState("");
   const [timeLeft, setTimeLeft] = useState(0);
+  const [realQuestion, setRealQuestion] = useState(""); // canonical real question for the round
 
-  // Listen for room changes
+  // subscribe to room changes
   useEffect(() => {
     if (!roomCode) return;
-
     const roomRef = ref(database, `rooms/${roomCode}`);
-    const unsub = onValue(roomRef, snapshot => {
+    const unsub = onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
       setPlayers(data.players || {});
@@ -268,182 +185,349 @@ export default function App() {
       setPhase(data.phase || "lobby");
       setTimerEnd(data.timerEnd || null);
       setCreator(data.creator || "");
+      setRealQuestion(data.realQuestion || "");
     });
-
     return () => unsub();
   }, [roomCode]);
 
-  // Timer logic
+  // timer countdown and automatic phase progression
   useEffect(() => {
     if (!timerEnd || phase === "lobby" || phase === "reveal") return;
+    const tick = setInterval(async () => {
+      const remain = Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000));
+      setTimeLeft(remain);
 
-    const interval = setInterval(async () => {
-      const remaining = Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000));
-      setTimeLeft(remaining);
-
-      if (remaining <= 0) {
+      if (remain <= 0) {
         const roomRef = ref(database, `rooms/${roomCode}`);
         const snap = await get(roomRef);
         if (!snap.exists()) return;
 
+        // transition from answer -> debate (show realQuestion during debate)
         if (phase === "answer") {
           await update(roomRef, {
             phase: "debate",
-            timerEnd: Date.now() + 180000
+            timerEnd: Date.now() + 3 * 60 * 1000 // 3 minutes debate
           });
         } else if (phase === "debate") {
-          await update(roomRef, { phase: "reveal", timerEnd: null });
+          await update(roomRef, {
+            phase: "reveal",
+            timerEnd: null
+          });
         }
       }
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(tick);
   }, [timerEnd, phase, roomCode]);
 
-  const createRoom = async () => {
-    if (!name) return;
+  /* ---------- Room management ---------- */
 
+  // create room (only sets creator & initial player)
+  const createRoom = async () => {
+    if (!name) {
+      alert("Enter your display name first.");
+      return;
+    }
+    // generate 4-digit code that doesn't always start with 0
     const code = Math.floor(Math.random() * 9000 + 1000).toString();
     setRoomCode(code);
-
+    const playerObj = { [name]: { question: "", vote: "" } };
     await set(ref(database, `rooms/${code}`), {
-      players: { [name]: { question: "", vote: "" } },
+      players: playerObj,
       impostors: [],
       phase: "lobby",
-      creator: name
+      timerEnd: null,
+      creator: name,
+      realQuestion: ""
     });
   };
 
+  // join existing room; preserves other players
   const joinRoom = async () => {
-    if (!roomCode || !name) return;
-
-    const roomRef = ref(database, `rooms/${roomCode}`);
-    const snap = await get(roomRef);
-
-    if (!snap.exists()) {
-      alert("Room does not exist!");
+    if (!roomCode || !name) {
+      alert("Enter a room code and your name.");
       return;
     }
 
+    const roomRef = ref(database, `rooms/${roomCode}`);
+    const snap = await get(roomRef);
+    if (!snap.exists()) {
+      alert("Room not found.");
+      return;
+    }
+
+    // set this player entry (will not delete others)
     await set(ref(database, `rooms/${roomCode}/players/${name}`), {
       question: "",
       vote: ""
     });
   };
 
-  const startGame = async () => {
-    if (name !== creator) return;
-    await startRound();
-  };
-
+  // start a new round (creator only)
   const startRound = async () => {
+    if (!roomCode) return;
     const roomRef = ref(database, `rooms/${roomCode}`);
     const snap = await get(roomRef);
-
     if (!snap.exists()) return;
-
     const data = snap.val();
-    const playerNames = Object.keys(data.players);
+    const playerNames = Object.keys(data.players || {});
+    if (playerNames.length === 0) return;
 
-    // Random impostors
-    const numImpostors = Math.max(1, Math.floor(Math.random() * playerNames.length));
+    // number of impostors: random between 0 and n-1 (as you requested)
+    const numImpostors = Math.floor(Math.random() * Math.max(1, playerNames.length));
     const shuffled = [...playerNames].sort(() => 0.5 - Math.random());
     const selectedImpostors = shuffled.slice(0, numImpostors);
 
-    // Pick category
+    // pick a category
     const category = promptCategories[Math.floor(Math.random() * promptCategories.length)];
-
-    // Assign questions
+    const canonicalReal = category.real;
     const updatedPlayers = {};
-    playerNames.forEach((p) => {
-      updatedPlayers[p] = {
-        vote: "",
-        question: selectedImpostors.includes(p)
-          ? category.impostor[Math.floor(Math.random() * category.impostor.length)]
-          : category.regular[Math.floor(Math.random() * category.regular.length)]
-      };
+
+    // assign: non-impostors get canonicalReal, impostors get one impostor variant each
+    playerNames.forEach((p, idx) => {
+      if (selectedImpostors.includes(p)) {
+        // random impostor variant from category.impostors
+        const variant = category.impostors[Math.floor(Math.random() * category.impostors.length)];
+        updatedPlayers[p] = { question: variant, vote: "" };
+      } else {
+        updatedPlayers[p] = { question: canonicalReal, vote: "" };
+      }
     });
 
+    // update room: players, impostors, realQuestion, phase=answer, timerEnd = now + 60s
     await update(roomRef, {
       players: updatedPlayers,
       impostors: selectedImpostors,
+      realQuestion: canonicalReal,
       phase: "answer",
-      timerEnd: Date.now() + 60000
+      timerEnd: Date.now() + 60 * 1000
     });
   };
 
-  const vote = async (target) => {
-    await set(ref(database, `rooms/${roomCode}/players/${name}/vote`), target);
+  // vote (any player) — saves their vote in DB
+  const castVote = async (targetName) => {
+    if (!roomCode || !name) return;
+    await set(ref(database, `rooms/${roomCode}/players/${name}/vote`), targetName);
   };
 
+  // convenience: creator starts game (same as startRound)
+  const startGame = async () => {
+    if (name !== creator) {
+      alert("Only the room creator can start the game.");
+      return;
+    }
+    await startRound();
+  };
+
+  // next round button (creator)
+  const nextRound = async () => {
+    if (name !== creator) {
+      alert("Only the creator can start the next round.");
+      return;
+    }
+    // reset votes and start a new round
+    await startRound();
+  };
+
+  /* ---------- UI helpers ---------- */
+
+  // returns initials for small avatar
+  const initials = (n) => {
+    if (!n) return "?";
+    return n.split(" ").map(s => s[0]?.toUpperCase()).slice(0,2).join("");
+  };
+
+  // friendly status for each player card (voted / waiting)
+  const playerVoted = (p) => {
+    return !!players[p]?.vote;
+  };
+
+  /* ---------- Render ---------- */
+
   return (
-    <div style={{ fontFamily: "Arial", textAlign: "center", padding: "20px" }}>
+    <div style={{ fontFamily: "Inter, Arial, sans-serif", padding: 20, maxWidth: 960, margin: "0 auto" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h1 style={{ margin: 0 }}>Guess The Liar</h1>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 14 }}>Room: <strong>{roomCode || "—"}</strong></div>
+          <div style={{ fontSize: 12, color: "#666" }}>You: <strong>{name || "anonymous"}</strong></div>
+        </div>
+      </header>
+
+      {/* Lobby / controls */}
       {phase === "lobby" && (
-        <div style={{ border: "1px solid #ccc", padding: 20, borderRadius: 10, maxWidth: 400, margin: "auto" }}>
-          <h2>Lobby</h2>
-          <input
-            placeholder="Your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={{ padding: 8, margin: 5 }}
-          />
-          <input
-            placeholder="Room code"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value)}
-            style={{ padding: 8, margin: 5 }}
-          />
-          <div>
-            <button onClick={createRoom} style={{ padding: 10, margin: 5 }}>Create Room</button>
-            <button onClick={joinRoom} style={{ padding: 10, margin: 5 }}>Join Room</button>
-            {name && creator === name && (
-              <button
-                onClick={startGame}
-                style={{ padding: 10, margin: 5, background: "#4caf50", color: "white", border: "none" }}
-              >
-                Start Game
-              </button>
-            )}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20 }}>
+          {/* Left: lobby actions & instructions */}
+          <div style={{ padding: 16, border: "1px solid #e6e6e6", borderRadius: 10 }}>
+            <h2 style={{ marginTop: 0 }}>Lobby</h2>
+            <p style={{ color: "#555" }}>Enter a display name and create or join a private room. Share the room code with family to join.</p>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <input
+                placeholder="Your name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+              />
+              <input
+                placeholder="Room code"
+                value={roomCode}
+                onChange={e => setRoomCode(e.target.value)}
+                style={{ width: 140, padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={createRoom} style={{ padding: "10px 14px", borderRadius: 8, background: "#0ea5a4", color: "white", border: "none", cursor: "pointer" }}>Create Room</button>
+              <button onClick={joinRoom} style={{ padding: "10px 14px", borderRadius: 8, background: "#60a5fa", color: "white", border: "none", cursor: "pointer" }}>Join Room</button>
+              {name && creator === name && (
+                <button onClick={startGame} style={{ padding: "10px 14px", borderRadius: 8, background: "#10b981", color: "white", border: "none", cursor: "pointer" }}>Start Game</button>
+              )}
+            </div>
+
+            <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid #f0f0f0" }} />
+
+            <p style={{ margin: 0, color: "#666" }}>
+              Game flow:
+              <ul style={{ color: "#666" }}>
+                <li>Answer phase — 60s: players read their question (in RL they answer out loud).</li>
+                <li>Debate phase — 3m: the app shows the real question to everyone for fair debate.</li>
+                <li>Vote & Reveal: votes are shown after reveal and the impostor(s) are revealed.</li>
+              </ul>
+            </p>
+          </div>
+
+          {/* Right: player grid (fancy cards) */}
+          <div style={{ padding: 16, border: "1px solid #e6e6e6", borderRadius: 10 }}>
+            <h3 style={{ marginTop: 0 }}>Players</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+              {Object.keys(players).length === 0 && <div style={{ color: "#888" }}>No players yet</div>}
+              {Object.entries(players).map(([p, pdata]) => (
+                <div key={p} style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: 12,
+                  borderRadius: 8,
+                  background: "#fff",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                  border: p === creator ? "1px solid #fde68a" : "1px solid #f1f5f9"
+                }}>
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 10,
+                    background: p === creator ? "#fef3c7" : "#eef2ff",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontWeight: 700, color: "#111"
+                  }}>
+                    {initials(p)}
+                  </div>
+                  <div style={{ textAlign: "left", flex: 1 }}>
+                    <div style={{ fontWeight: 700 }}>{p}{p === creator ? " (host)" : ""}</div>
+                    <div style={{ fontSize: 12, color: "#666" }}>{players[p].question ? "Ready" : "Joined"}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 12, color: playerVoted(p) ? "#059669" : "#888" }}>
+                      {playerVoted(p) ? "Voted" : "Not voted"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
+      {/* Answer phase: show each player's individual question (impostor sees their variant) */}
       {phase === "answer" && (
-        <div>
+        <div style={{ padding: 20, borderRadius: 10, border: "1px solid #eee", background: "#ffffff" }}>
           <h2>Answer Phase</h2>
-          <p><strong>Question:</strong> {players[name]?.question}</p>
-          <p><strong>Time left:</strong> {timeLeft}s</p>
-          <p>Discuss in real life!</p>
+          <p style={{ color: "#444", marginTop: 6 }}>Look at your question below and answer it out loud with family.<br />
+            You will not submit answers in the app — debate and voting happen after the timer.</p>
+
+          <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
+            <div style={{ width: "100%", maxWidth: 700, padding: 18, borderRadius: 12, background: "#fafafa", border: "1px solid #f0f0f0" }}>
+              <div style={{ fontSize: 14, color: "#888" }}>Your private prompt</div>
+              <div style={{ marginTop: 12, padding: 14, borderRadius: 8, background: "#fff", boxShadow: "inset 0 1px 0 rgba(0,0,0,0.02)" }}>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>{players[name]?.question || "Waiting for assignment..."}</div>
+                <div style={{ marginTop: 8, color: "#666" }}>
+                  Time left: <strong>{timeLeft}s</strong>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Debate phase: show canonical realQuestion so everyone's debating the same topic, then vote */}
       {phase === "debate" && (
-        <div>
+        <div style={{ padding: 20, borderRadius: 10, border: "1px solid #eee", background: "#ffffff" }}>
           <h2>Debate Phase</h2>
-          {Object.keys(players).map((p) => (
-            <button key={p} onClick={() => vote(p)} style={{ margin: 5, padding: 10 }}>
-              Vote {p}
-            </button>
-          ))}
-          <p>Your vote: {players[name]?.vote || "None"}</p>
-          <p>Time left: {timeLeft}s</p>
+          <p style={{ color: "#444" }}>The real question (what non-impostors had):</p>
+
+          <div style={{ margin: "12px auto", maxWidth: 720 }}>
+            <div style={{ padding: 16, borderRadius: 10, background: "#f8fafc", border: "1px solid #eef2ff" }}>
+              <div style={{ fontWeight: 700, fontSize: 18 }}>{realQuestion || "—"}</div>
+              <div style={{ marginTop: 8, color: "#666" }}>
+                Debate out loud with family. When you're ready, cast your vote in the app for who you think is the impostor.
+              </div>
+            </div>
+
+            <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {Object.keys(players).map(p => (
+                <button
+                  key={p}
+                  onClick={() => castVote(p)}
+                  disabled={players[name]?.vote === p}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    border: players[name]?.vote === p ? "2px solid #10b981" : "1px solid #e6e6e6",
+                    background: players[name]?.vote === p ? "#ecfdf5" : "#fff",
+                    cursor: players[name]?.vote === p ? "default" : "pointer"
+                  }}
+                >
+                  Vote {p}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 12, color: "#444" }}>
+              <strong>Your vote:</strong> {players[name]?.vote || "None"} • <strong>Time left:</strong> {timeLeft}s
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Reveal phase: show impostors and players' votes */}
       {phase === "reveal" && (
-        <div>
-          <h2>Reveal Phase</h2>
-          <p><strong>Impostors:</strong> {impostors.join(", ")}</p>
-          <h4>Votes:</h4>
-          <ul>
-            {Object.entries(players).map(([p, data]) => (
-              <li key={p}>{p} voted for {data.vote || "Nobody"}</li>
-            ))}
-          </ul>
+        <div style={{ padding: 20, borderRadius: 10, border: "1px solid #eee", background: "#ffffff" }}>
+          <h2>Reveal</h2>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 16 }}>
+              Real question: <strong>{realQuestion || "—"}</strong>
+            </div>
+            <div style={{ marginTop: 8, color: "#666" }}>
+              Impostor(s): <strong>{impostors.length ? impostors.join(", ") : "None"}</strong>
+            </div>
+          </div>
+
+          <div style={{ textAlign: "left", maxWidth: 720, margin: "0 auto" }}>
+            <h4>Votes</h4>
+            <ul>
+              {Object.entries(players).map(([p, data]) => (
+                <li key={p} style={{ padding: "6px 0" }}>
+                  <strong>{p}</strong> voted for <em>{data.vote || "Nobody"}</em>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           {name === creator && (
-            <button onClick={startRound} style={{ padding: 10, marginTop: 10 }}>
-              Next Round
-            </button>
+            <div style={{ marginTop: 16 }}>
+              <button onClick={nextRound} style={{ padding: "10px 16px", borderRadius: 8, background: "#06b6d4", color: "white", border: "none" }}>
+                Next Round
+              </button>
+            </div>
           )}
         </div>
       )}
