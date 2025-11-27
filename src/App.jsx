@@ -222,10 +222,11 @@ return (
       <input
         type="text"
         value={players[name]?.answer || ""}
-        onChange={(e) => {
-          update(ref(database, `rooms/${roomCode}/players/${name}`), { answer: e.target.value });
-        }}
         placeholder="Type your answer"
+        onChange={(e) => {
+          const ans = e.target.value;
+          update(ref(database, `rooms/${roomCode}/players/${name}`), { answer: ans });
+        }}
       />
       <div>Time left: {timeLeft}s</div>
     </div>
