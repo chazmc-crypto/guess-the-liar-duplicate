@@ -1,196 +1,174 @@
-import React, { useState, useEffect } from "react";
-import { database } from "./firebase";
-import { ref, set, get, update, onValue } from "firebase/database";
+import React, { useEffect, useState } from "react";
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, set, onValue, update, get } from "firebase/database";
 
-const prompts = [
-  "What is the correct amount of money to spend on a first date?",
-  "Pick a dollar range between $20-500",
-  "What is the best pizza topping?",
-  "Pick a weird pizza topping"
+// Firebase configuration
+const firebaseConfig = {
+apiKey: "AIzaSyBfHKSTDRQVsoFXSbospWZHJRlRSijgiW0",
+authDomain: "guesstheliar-ca0b6.firebaseapp.com",
+databaseURL: "[https://guesstheliar-ca0b6-default-rtdb.firebaseio.com](https://guesstheliar-ca0b6-default-rtdb.firebaseio.com)",
+projectId: "guesstheliar-ca0b6",
+storageBucket: "guesstheliar-ca0b6.firebasestorage.app",
+messagingSenderId: "300436562056",
+appId: "1:300436562056:web:8e5368b914a5cbfded7f3d"
+};
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+
+// Example prompt categories
+const promptCategories = [
+{
+name: "Date Spending",
+regular: ["What is the ideal first date spending?", "Choose a budget for a first date meal"],
+impostor: ["Pick a random dollar amount", "Choose an unusual date budget"]
+},
+{
+name: "Pizza Toppings",
+regular: ["Choose a classic pizza topping", "Pick a topping most people like"],
+impostor: ["Pick a weird topping", "Choose an unexpected pizza topping"]
+}
+// add more categories here
 ];
 
-function App() {
-  const [name, setName] = useState("");
-  const [roomCodeInput, setRoomCodeInput] = useState("");
-  const [roomCode, setRoomCode] = useState("");
-  const [players, setPlayers] = useState({});
-  const [phase, setPhase] = useState("waiting");
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [voteTarget, setVoteTarget] = useState("");
-  const [impostors, setImpostors] = useState([]);
-  const [error, setError] = useState("");
-  const [creator, setCreator] = useState("");
+export default function App() {
+const [name, setName] = useState("");
+const [roomCode, setRoomCode] = useState("");
+const [players, setPlayers] = useState({});
+const [impostors, setImpostors] = useState([]);
+const [phase, setPhase] = useState("lobby");
+const [timerEnd, setTimerEnd] = useState(null);
+const [creator, setCreator] = useState("");
 
-  const generateRoomCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+useEffect(() => {
+if (!roomCode) return;
+const roomRef = ref(database, `rooms/${roomCode}`);
+const unsub = onValue(roomRef, snapshot => {
+const data = snapshot.val();
+if (!data) return;
+setPlayers(data.players || {});
+setImpostors(data.impostors || []);
+setPhase(data.phase || "lobby");
+setTimerEnd(data.timerEnd || null);
+setCreator(data.creator || "");
+});
+return () => unsub();
+}, [roomCode]);
 
-  const createRoom = async () => {
-    if (!name) { setError("Enter your name"); return; }
-    const code = generateRoomCode();
-    const roomRef = ref(database, `rooms/${code}`);
-    await set(roomRef, {
-      creator: name,
-      players: { [name]: { vote: "", question: "" } },
-      phase: "waiting",
-      timerEnd: 0,
-      impostors: []
-    });
-    setRoomCode(code);
-    setCreator(name);
-    setPhase("waiting");
-    setError("");
-  };
+const createRoom = async () => {
+const code = Math.floor(Math.random() * 10000).toString();
+setRoomCode(code);
+const playerData = {};
+playerData[name] = { question: "", vote: "" };
+await set(ref(database, `rooms/${code}`), {
+players: playerData,
+impostors: [],
+phase: "lobby",
+creator: name
+});
+};
 
-  const joinRoom = async () => {
-    if (!name || !roomCodeInput) { setError("Enter name and room code"); return; }
-    const roomRef = ref(database, `rooms/${roomCodeInput}`);
-    const snap = await get(roomRef);
-    if (!snap.exists()) { setError("Room not found"); return; }
-    const roomData = snap.val();
-    const updatedPlayers = { ...roomData.players, [name]: { vote: "", question: "" } };
-    await update(roomRef, { players: updatedPlayers });
-    setRoomCode(roomCodeInput);
-    setCreator(roomData.creator);
-    setPhase(roomData.phase);
-    setError("");
-  };
+const joinRoom = async () => {
+if (!roomCode || !name) return;
+const playerRef = ref(database, `rooms/${roomCode}/players/${name}`);
+await set(playerRef, { question: "", vote: "" });
+};
 
-  const startGame = async () => {
-    if (name !== creator) return;
-    const roomRef = ref(database, `rooms/${roomCode}`);
-    const snap = await get(roomRef);
-    if (!snap.exists()) return;
-    const roomData = snap.val();
-    const playerNames = Object.keys(roomData.players);
-    const numImpostors = Math.floor(Math.random() * playerNames.length);
-    const shuffled = [...playerNames].sort(() => 0.5 - Math.random());
-    const selectedImpostors = shuffled.slice(0, numImpostors);
-
-    const updatedPlayers = {};
-    playerNames.forEach((p) => {
-      const question = prompts[Math.floor(Math.random() * prompts.length)];
-      updatedPlayers[p] = { vote: "", question };
-    });
-
-    const timerEnd = Date.now() + 60 * 1000; // 1 min answer
-    await update(roomRef, {
-      players: updatedPlayers,
-      impostors: selectedImpostors,
-      phase: "answer",
-      timerEnd
-    });
-  };
-
-  // --- Sync room data ---
-  useEffect(() => {
-    if (!roomCode) return;
-    const roomRef = ref(database, `rooms/${roomCode}`);
-    const unsubscribe = onValue(roomRef, (snap) => {
-      if (!snap.exists()) return;
-      const data = snap.val();
-      setPlayers(data.players || {});
-      setPhase(data.phase || "waiting");
-      setCreator(data.creator || "");
-      if (data.timerEnd) setTimeLeft(Math.max(Math.floor((data.timerEnd - Date.now()) / 1000), 0));
-      setImpostors(data.phase === "reveal" ? data.impostors || [] : []);
-    });
-    return () => unsubscribe();
-  }, [roomCode]);
-
-  // --- Timer ---
-  useEffect(() => {
-    if (!roomCode || !phase) return;
-    const roomRef = ref(database, `rooms/${roomCode}`);
-    let interval;
-    if (phase === "answer" || phase === "debate") {
-      interval = setInterval(async () => {
-        const snap = await get(roomRef);
-        if (!snap.exists()) return;
-        const remaining = Math.max(Math.floor((snap.val().timerEnd - Date.now()) / 1000), 0);
-        setTimeLeft(remaining);
-
-        if (remaining <= 0) {
-          clearInterval(interval);
-          if (phase === "answer") {
-            const newEnd = Date.now() + 3 * 60 * 1000; // 3 min debate
-            update(roomRef, { phase: "debate", timerEnd: newEnd });
-          } else if (phase === "debate") {
-            update(roomRef, { phase: "voting", timerEnd: 0 });
-          }
-        }
-      }, 500);
-    }
-    return () => clearInterval(interval);
-  }, [phase, roomCode]);
-
-  const castVote = async () => {
-    if (!voteTarget) return;
-    const playerRef = ref(database, `rooms/${roomCode}/players/${name}`);
-    await update(playerRef, { vote: voteTarget });
-
-    const roomSnap = await get(ref(database, `rooms/${roomCode}/players`));
-    const allVoted = Object.values(roomSnap.val()).every(p => p.vote);
-    if (allVoted) {
-      await update(ref(database, `rooms/${roomCode}`), { phase: "reveal" });
-    }
-  };
-
-  return (
-    <div style={{ padding: 20 }}>
-      <h1>Guess The Liar</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {!roomCode && (
-        <div>
-          <input placeholder="Enter your name" value={name} onChange={e => setName(e.target.value)} />
-          <input placeholder="Enter room code to join" value={roomCodeInput} onChange={e => setRoomCodeInput(e.target.value)} />
-          <div style={{ marginTop: 10 }}>
-            <button onClick={createRoom}>Create Room</button>
-            <button onClick={joinRoom}>Join Room</button>
-          </div>
-        </div>
-      )}
-
-      {roomCode && phase === "waiting" && (
-        <div>
-          <h2>Room Code: {roomCode}</h2>
-          {name === creator && <button onClick={startGame}>Start Game</button>}
-          <ul>{Object.keys(players).map(p => <li key={p}>{p}</li>)}</ul>
-        </div>
-      )}
-
-      {(phase === "answer" || phase === "debate") && (
-        <div>
-          <h2>Phase: {phase}</h2>
-          <h3>Time left: {timeLeft} seconds</h3>
-          <h4>Your Question:</h4>
-          <p>{players[name]?.question}</p>
-          <ul>{Object.keys(players).map(p => <li key={p}>{p}</li>)}</ul>
-        </div>
-      )}
-
-      {phase === "voting" && (
-        <div>
-          <h2>Voting Phase</h2>
-          <select value={voteTarget} onChange={e => setVoteTarget(e.target.value)}>
-            <option value="">Select a player</option>
-            {Object.keys(players).filter(p => p !== name).map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
-          <button onClick={castVote}>Submit Vote</button>
-        </div>
-      )}
-
-      {phase === "reveal" && (
-        <div>
-          <h2>Reveal Phase</h2>
-          <p>Impostor(s): {impostors.join(", ") || "None"}</p>
-          <h4>Votes:</h4>
-          <ul>
-            {Object.entries(players).map(([p, data]) => <li key={p}>{p} voted for {data.vote || "nobody"}</li>)}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
+const startGame = async () => {
+if (name !== creator) return;
+const roomRef = ref(database, `rooms/${roomCode}`);
+const snap = await get(roomRef);
+if (!snap.exists()) return;
+const data = snap.val();
+const playerNames = Object.keys(data.players);
+const numImpostors = Math.floor(Math.random() * playerNames.length);
+const shuffled = [...playerNames].sort(() => 0.5 - Math.random());
+const selectedImpostors = shuffled.slice(0, numImpostors);
+const category = promptCategories[Math.floor(Math.random() * promptCategories.length)];
+const updatedPlayers = {};
+playerNames.forEach(p => {
+if (selectedImpostors.includes(p)) {
+updatedPlayers[p] = { vote: "", question: category.impostor[Math.floor(Math.random() * category.impostor.length)] };
+} else {
+updatedPlayers[p] = { vote: "", question: category.regular[Math.floor(Math.random() * category.regular.length)] };
 }
+});
+const timerEnd = Date.now() + 60 * 1000;
+await update(roomRef, { players: updatedPlayers, impostors: selectedImpostors, phase: "answer", timerEnd });
+};
 
-export default App;
+const startNextRound = async () => {
+const roomRef = ref(database, `rooms/${roomCode}`);
+const snap = await get(roomRef);
+if (!snap.exists()) return;
+const data = snap.val();
+const playerNames = Object.keys(data.players);
+const numImpostors = Math.floor(Math.random() * playerNames.length);
+const shuffled = [...playerNames].sort(() => 0.5 - Math.random());
+const selectedImpostors = shuffled.slice(0, numImpostors);
+const category = promptCategories[Math.floor(Math.random() * promptCategories.length)];
+const updatedPlayers = {};
+playerNames.forEach(p => {
+if (selectedImpostors.includes(p)) {
+updatedPlayers[p] = { vote: "", question: category.impostor[Math.floor(Math.random() * category.impostor.length)] };
+} else {
+updatedPlayers[p] = { vote: "", question: category.regular[Math.floor(Math.random() * category.regular.length)] };
+}
+});
+const timerEnd = Date.now() + 60 * 1000;
+await update(roomRef, { players: updatedPlayers, impostors: selectedImpostors, phase: "answer", timerEnd });
+};
+
+const vote = async votedPlayer => {
+const voteRef = ref(database, `rooms/${roomCode}/players/${name}/vote`);
+await set(voteRef, votedPlayer);
+};
+
+return (
+<div style={{ padding: "20px" }}>
+{phase === "lobby" && ( <div> <h2>Lobby</h2>
+<input placeholder="Your name" value={name} onChange={e => setName(e.target.value)} />
+<input placeholder="Room code" value={roomCode} onChange={e => setRoomCode(e.target.value)} /> <button onClick={createRoom}>Create Room</button> <button onClick={joinRoom}>Join Room</button>
+{name === creator && <button onClick={startGame}>Start Game</button>} </div>
+)}
+
+```
+  {phase === "answer" && (  
+    <div>  
+      <h2>Answer Phase</h2>  
+      <p>Your question: {players[name]?.question}</p>  
+      <p>Time left: {Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000))} seconds</p>  
+    </div>  
+  )}  
+
+  {phase === "debate" && (  
+    <div>  
+      <h2>Debate Phase</h2>  
+      <p>Discuss in real life! Then vote in the app.</p>  
+      {Object.keys(players).map(p => (  
+        <button key={p} onClick={() => vote(p)} disabled={players[name]?.vote === p}>  
+          Vote {p}  
+        </button>  
+      ))}  
+      <p>Your vote: {players[name]?.vote || "None"}</p>  
+    </div>  
+  )}  
+
+  {phase === "reveal" && (  
+    <div>  
+      <h2>Reveal Phase</h2>  
+      <p>Impostor(s): {impostors.join(", ") || "None"}</p>  
+      <h4>Votes:</h4>  
+      <ul>  
+        {Object.entries(players).map(([p, data]) => (  
+          <li key={p}>{p} voted for {data.vote || "nobody"}</li>  
+        ))}  
+      </ul>  
+      {name === creator && <button onClick={startNextRound}>Next Round</button>}  
+    </div>  
+  )}  
+</div>  
+```
+
+);
+}
